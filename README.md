@@ -21,6 +21,13 @@ uv tool install specify-cli --force --from git+https://github.com/github/spec-ki
 ```
 
 - Claude Code (o pacote suporta apenas a integração `claude`, com scripts `ps`)
+- Política de execução do PowerShell liberada para scripts locais. O Windows vem com "Restricted" e bloqueia qualquer `.ps1`. Uma vez por usuário, sem administrador:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+Alternativa sem mudar a política: `powershell -ExecutionPolicy Bypass -File <script> <argumentos>`.
 
 ## Uso no dia a dia (time)
 
