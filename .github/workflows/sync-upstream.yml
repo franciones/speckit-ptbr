@@ -76,24 +76,21 @@ jobs:
         run: |
           $v = '${{ steps.sync.outputs.version }}'
           $c = '${{ steps.sync.outputs.commit }}'
+          $tick = [char]96
+          $lines = @()
+          $lines += "Upstream atualizado para **$v** ($tick$c$tick)."
+          $lines += ''
           if (Test-Path sync/pending.json) {
-            $body = @"
-Upstream atualizado para **$v** (`$c`).
-
-Arquivos com mudanças estão em ``sync/pending.json`` e os diffs em ``sync/$v-$c/``.
-
-**Pendente antes de mesclar:**
-1. ``.\scripts\translate-pending.ps1``
-2. ``.\scripts\validate.ps1``
-3. Revisar o diff de ``ptbr/`` e fazer commit nesta branch.
-"@
+            $lines += "Arquivos com mudanças estão em ${tick}sync/pending.json${tick} e os diffs em ${tick}sync/$v-$c/${tick}."
+            $lines += ''
+            $lines += '**Pendente antes de mesclar:**'
+            $lines += "1. ${tick}.\scripts\translate-pending.ps1${tick}"
+            $lines += "2. ${tick}.\scripts\validate.ps1${tick}"
+            $lines += "3. Revisar o diff de ${tick}ptbr/${tick} e fazer commit nesta branch."
           } else {
-            $body = @"
-Upstream atualizado para **$v** (`$c`).
-
-Tradução aplicada e validada. Revisar o diff de ``ptbr/`` e mesclar.
-"@
+            $lines += "Tradução aplicada e validada. Revisar o diff de ${tick}ptbr/${tick} e mesclar."
           }
+          $body = $lines -join "`n"
           "body<<EOF"  | Out-File -Append -FilePath $env:GITHUB_OUTPUT
           $body        | Out-File -Append -FilePath $env:GITHUB_OUTPUT
           "EOF"        | Out-File -Append -FilePath $env:GITHUB_OUTPUT
