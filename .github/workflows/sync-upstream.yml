@@ -1,0 +1,109 @@
+# Sincroniza o pacote com o github/spec-kit e abre um pull request quando algo mudou.
+#
+# Agendado toda segunda-feira. Também pode ser disparado manualmente em Actions > sync-upstream > Run workflow.
+#
+# Para o job conseguir abrir PR: Settings > Actions > General > Workflow permissions:
+#   - "Read and write permissions"
+#   - marcar "Allow GitHub Actions to create and approve pull requests"
+#
+# Tradução automática no CI (opcional): rode manualmente com "translate" marcado e cadastre o
+# secret ANTHROPIC_API_KEY. Sem isso, o PR traz só os diffs e a tradução é feita localmente com
+# scripts/translate-pending.ps1.
+
+name: sync-upstream
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag ou commit do github/spec-kit'
+        default: 'main'
+        required: false
+      translate:
+        description: 'Traduzir pendências no CI com o Claude Code (exige secret ANTHROPIC_API_KEY)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Detectar mudanças no upstream
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Expor binários do uv tool no PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: sync-upstream.ps1
+        id: sync
+        shell: pwsh
+        env:
+          UPSTREAM_REF: ${{ inputs.ref || 'main' }}
+        run: |
+          ./scripts/sync-upstream.ps1 -Ref $env:UPSTREAM_REF
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $v = ((Get-Content VERSION | Where-Object { $_ -like 'upstream_version=*' }) -replace '^upstream_version=', '').Trim()
+          $c = ((Get-Content VERSION | Where-Object { $_ -like 'upstream_commit=*' }) -replace '^upstream_commit=', '').Trim()
+          if ($c.Length -gt 7) { $c = $c.Substring(0, 7) }
+          $pending = Test-Path sync/pending.json
+          "version=$v"      | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          "commit=$c"       | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          "pending=$pending" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+
+      - name: Traduzir pendências com o Claude Code (opcional)
+        if: ${{ inputs.translate == true && steps.sync.outputs.pending == 'True' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        shell: pwsh
+        run: |
+          if (-not $env:ANTHROPIC_API_KEY) { Write-Host 'Secret ANTHROPIC_API_KEY ausente; pulando tradução.'; exit 0 }
+          npm install -g @anthropic-ai/claude-code
+          ./scripts/translate-pending.ps1
+          Write-Host "translate-pending saiu com $LASTEXITCODE (0 = traduzido e validado)"
+          exit 0
+
+      - name: Montar descrição do PR
+        id: body
+        shell: pwsh
+        run: |
+          $v = '${{ steps.sync.outputs.version }}'
+          $c = '${{ steps.sync.outputs.commit }}'
+          if (Test-Path sync/pending.json) {
+            $body = @"
+Upstream atualizado para **$v** (`$c`).
+
+Arquivos com mudanças estão em ``sync/pending.json`` e os diffs em ``sync/$v-$c/``.
+
+**Pendente antes de mesclar:**
+1. ``.\scripts\translate-pending.ps1``
+2. ``.\scripts\validate.ps1``
+3. Revisar o diff de ``ptbr/`` e fazer commit nesta branch.
+"@
+          } else {
+            $body = @"
+Upstream atualizado para **$v** (`$c`).
+
+Tradução aplicada e validada. Revisar o diff de ``ptbr/`` e mesclar.
+"@
+          }
+          "body<<EOF"  | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          $body        | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+          "EOF"        | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+
+      - name: Abrir pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: sync/${{ steps.sync.outputs.version }}-${{ steps.sync.outputs.commit }}
+          commit-message: 'sync: upstream ${{ steps.sync.outputs.version }} (${{ steps.sync.outputs.commit }})'
+          title: 'sync: upstream ${{ steps.sync.outputs.version }} (${{ steps.sync.outputs.commit }})'
+          body: ${{ steps.body.outputs.body }}
+          labels: sync-upstream
+          delete-branch: true

@@ -1,0 +1,10 @@
+# prompts gerados para tradução (podem ser grandes; regenerados por translate-pending.ps1)
+sync/*/prompts/
+
+# estado local do Claude Code
+.claude/settings.local.json
+
+# temporários
+*.tmp
+Thumbs.db
+.DS_Store
