@@ -65,9 +65,43 @@ Depois abra o Claude Code no projeto e comece por `/speckit-constitution`. O arq
 
 Se o projeto já tiver um `CLAUDE.md`, o script anexa a seção de idioma em vez de sobrescrever.
 
+## Atualizar um projeto que já usa o pacote
+
+Quando o pacote receber uma versão nova (PR de sync mesclado), atualize cada projeto assim:
+
+```powershell
+git -C C:\Ferramentas\speckit-ptbr pull
+uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git@<upstream_commit do VERSION>
+cd C:\Projetos\meu-projeto
+specify init --here --force --integration claude --script ps --non-interactive
+C:\Ferramentas\speckit-ptbr\scripts\apply.ps1 -ProjectPath . -Force
+```
+
+No Linux, troque `--script ps` por `--script sh` e use `apply.sh . --force`.
+
+O `specify init --here` atualiza a CLI, os scripts e o workflow do projeto. Ele para se encontrar arquivos gerenciados editados; como os templates e skills foram editados pela tradução, o `--force` é esperado aqui. O `apply.ps1` reaplica a tradução por cima. Não são tocados: a pasta `specs/`, a constituição já preenchida em `.specify/memory/constitution.md` e o `CLAUDE.md` do projeto.
+
+Não é obrigatório atualizar projetos em andamento. Um projeto continua funcionando com a versão em que foi criado. Atualize quando o upstream trouxer algo que você quer, ou ao iniciar uma feature nova.
+
 ## Atualização contínua (mantenedores)
 
 O GitHub lança versões do Spec Kit com frequência. A maioria não toca nos 16 arquivos traduzidos, e o fluxo abaixo detecta isso automaticamente.
+
+### Quando
+
+- **Automático, toda segunda-feira.** O workflow `sync-upstream` compara o pacote com o `main` do Spec Kit. Se nada mudou nos 16 arquivos, termina em silêncio. Se mudou, abre um pull request `sync: upstream <versão> (<commit>)` com os diffs e a lista de pendências. Você só age quando esse PR aparecer.
+- **Sob demanda.** Em Actions > sync-upstream > Run workflow, informando opcionalmente um ref (tag, branch ou commit do Spec Kit).
+- **Local.** Rodando `scripts/sync-upstream.ps1` na sua máquina, útil para testar antes de abrir PR.
+
+### Fluxo a partir do PR automático
+
+1. Faça checkout da branch do PR: `git fetch; git checkout sync/<versão>-<commit>`.
+2. Rode `.\scripts\translate-pending.ps1`. Ele lê `sync/pending.json` e traduz só os trechos alterados, preservando as escolhas anteriores. Precisa da CLI `claude` autenticada; sem ela, use `-PromptsOnly` e cole os prompts no Claude Code.
+3. Rode `.\scripts\validate.ps1`. O mesmo validador roda no CI do PR.
+4. Revise o diff de `ptbr/`, faça commit na branch e mescle o PR.
+5. Atualize os projetos que quiser, conforme a seção anterior.
+
+### Fluxo local completo
 
 ```powershell
 .\scripts\sync-upstream.ps1          # instala a specify mais nova, compara e grava diffs em sync/
@@ -78,7 +112,7 @@ git add -A; git commit -m "sync: upstream <versao>"
 
 O que cada passo faz:
 
-1. `sync-upstream.ps1` instala a `specify` do ref indicado (padrão `main`), gera um projeto temporário, compara os 16 arquivos com `upstream/` e, para cada um que mudou, grava em `sync/<versão>-<commit>/` o original antigo, o novo e o diff. Atualiza `upstream/`, `VERSION` e `sync/pending.json`. Se nada mudou, só atualiza `VERSION`.
+1. `sync-upstream.ps1` instala a `specify` do ref indicado (padrão `main`), gera um projeto temporário, compara os 16 arquivos com `upstream/` e, para cada um que mudou, grava em `sync/<versão>-<commit>/` o original antigo, o novo e o diff. Atualiza `upstream/`, `upstream-sh/`, `VERSION` e `sync/pending.json`. Se nada mudou, só atualiza `VERSION` quando o número de versão do Spec Kit mudou; commits do upstream que não tocam nos arquivos acompanhados não geram alteração nem PR.
 2. `translate-pending.ps1` monta um prompt por arquivo pendente com as regras do `CLAUDE.md`, o diff e a tradução atual, e pede ao Claude a versão atualizada aplicando somente o que mudou. Sem a CLI `claude`, use `-PromptsOnly` e cole os prompts no Claude Code manualmente.
 3. `validate.ps1` confere que a tradução preserva o que os comandos dependem: frontmatter, `$ARGUMENTS`, chaves de hooks, caminhos de scripts, blocos de código, marcadores e placeholders. Roda também no CI a cada pull request.
 
@@ -132,5 +166,5 @@ As decisões de tradução tomadas nos skills estão registradas em `DECISOES.md
 ## Limitações conhecidas
 
 - Suporta só a integração Claude Code. As duas variantes de script do Spec Kit (`ps` e `sh`) são atendidas: a tradução canônica é `ps` e a `sh` é derivada ao aplicar, validada contra os skills bash do upstream guardados em `upstream-sh/`. Outros agentes (Copilot, Cursor, Gemini) têm arquivos de comando em outros caminhos e precisariam de uma variante do pacote.
-- Depois de aplicar a tradução, um `specify init --here` em versão nova vai parar ao detectar arquivos editados. Isso é esperado. Atualize pelo pacote: `sync-upstream.ps1` e depois `apply.ps1 -Force`.
+- Depois de aplicar a tradução, um `specify init --here` em versão nova vai parar ao detectar arquivos editados. Isso é esperado. Use `--force` e reaplique com `apply.ps1 -Force`, como descrito em "Atualizar um projeto que já usa o pacote".
 - O GitHub fechou como "não planejado" os pedidos de suporte a idioma (issues 116 e 1239). Se um dia o upstream ganhar essa opção, este pacote deixa de ser necessário.
