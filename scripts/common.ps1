@@ -66,6 +66,19 @@ function Get-FileHashSha256 {
     return (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+# Hash do conteúdo com quebras de linha normalizadas para LF e sem BOM, para que diferenças
+# só de CRLF/LF (autocrlf do git, editores no Windows) não contem como mudança no upstream.
+function Get-NormalizedTextHash {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return $null }
+    $text = [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
+    $text = $text.Replace("`r`n", "`n").TrimStart([char]0xFEFF)
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($text)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try { return ([System.BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant() }
+    finally { $sha.Dispose() }
+}
+
 function Read-Utf8 {
     param([string]$Path)
     return [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)

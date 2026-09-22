@@ -75,8 +75,8 @@ foreach ($rel in $script:UpstreamFiles) {
     $newFile = Join-Path $tmp $rel
     $oldFile = Join-Path $upstreamDir $rel
     if (-not (Test-Path $newFile)) { $missingInNew += $rel; continue }
-    $newHash = Get-FileHashSha256 $newFile
-    $oldHash = Get-FileHashSha256 $oldFile
+    $newHash = Get-NormalizedTextHash $newFile
+    $oldHash = Get-NormalizedTextHash $oldFile
     if ($newHash -ne $oldHash) { $changed += $rel }
 }
 

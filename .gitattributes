@@ -1,0 +1,8 @@
+# Mantém LF em todos os arquivos de texto, em qualquer sistema.
+# O sync-upstream.ps1 compara os arquivos gerados pela specify (LF) com upstream/;
+# se o checkout convertesse para CRLF, todos apareceriam como alterados.
+* text=auto eol=lf
+*.ps1 text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
