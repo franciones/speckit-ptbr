@@ -101,7 +101,9 @@ if ($newSkills.Count -gt 0) {
 
 if ($changed.Count -eq 0) {
     Write-Ok "Nenhum dos $($script:UpstreamFiles.Count) arquivos acompanhados mudou. Pacote está alinhado com $newVersion."
-    if (-not $CheckOnly -and ($newVersion -ne $current.upstream_version -or $newCommit -ne $current.upstream_commit)) {
+    # Só registra versão nova quando o número de versão muda. Commits do upstream que não tocam
+    # nos arquivos acompanhados não alteram VERSION, para não gerar pull request de ruído.
+    if (-not $CheckOnly -and $newVersion -ne $current.upstream_version) {
         $current.upstream_version = $newVersion
         $current.upstream_ref = $Ref
         $current.upstream_commit = $newCommit
