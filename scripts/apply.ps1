@@ -39,16 +39,12 @@ if (-not (Test-Path (Join-Path $ProjectPath '.claude/skills/speckit-specify/SKIL
     exit 1
 }
 
+$variant = $version.script
 $integrationFile = Join-Path $ProjectPath '.specify/integration.json'
 if (Test-Path $integrationFile) {
     $integration = Get-Content $integrationFile -Raw | ConvertFrom-Json
-    $scriptType = $null
-    if ($integration.integration_settings -and $integration.integration_settings.claude) {
-        $scriptType = $integration.integration_settings.claude.script
-    }
-    if ($scriptType -and $scriptType -ne $version.script) {
-        Write-Warn2 "Projeto usa scripts '$scriptType', mas os skills traduzidos referenciam scripts '$($version.script)'. Reinicialize com --script $($version.script)."
-        if (-not $Force) { exit 1 }
+    if ($integration.integration_settings -and $integration.integration_settings.claude -and $integration.integration_settings.claude.script) {
+        $variant = $integration.integration_settings.claude.script
     }
     if ($integration.version -and $integration.version -ne $version.upstream_version) {
         Write-Warn2 "Projeto foi gerado pela specify $($integration.version); o pacote acompanha a $($version.upstream_version)."
@@ -59,13 +55,23 @@ if (Test-Path $integrationFile) {
     }
 }
 
-# 2. Copia os arquivos traduzidos derivados do upstream
+if ($script:SupportedScriptVariants -notcontains $variant) {
+    Write-Fail "Variante de script '$variant' não suportada. Use --script ps ou --script sh no specify init."
+    exit 1
+}
+Write-Ok "Variante de scripts do projeto: $variant"
+
+# 2. Copia os arquivos traduzidos derivados do upstream (skills convertidos se a variante for sh)
 $applied = @()
 foreach ($rel in $script:UpstreamFiles) {
     $src = Join-Path $overlay $rel
     $dst = Join-Path $ProjectPath $rel
     if (-not (Test-Path $src)) { Write-Warn2 "Arquivo ausente no pacote, pulando: $rel"; continue }
-    Copy-WithDirs -Source $src -Destination $dst
+    if ($variant -eq 'sh' -and $rel -like '*.claude/skills/*') {
+        Write-Utf8 -Path $dst -Content (Convert-SkillToShVariant (Read-Utf8 $src))
+    } else {
+        Copy-WithDirs -Source $src -Destination $dst
+    }
     $applied += $rel
 }
 Write-Ok "$($applied.Count) arquivos traduzidos aplicados"
@@ -91,6 +97,7 @@ if (Test-Path $claudeDst) {
 $stamp = @{
     pack_upstream_version = $version.upstream_version
     pack_upstream_commit  = $version.upstream_commit
+    script_variant        = $variant
     applied_at            = (Get-Date).ToString('yyyy-MM-ddTHH:mm:sszzz')
     files                 = $applied
 }

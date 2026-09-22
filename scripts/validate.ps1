@@ -99,6 +99,21 @@ foreach ($rel in $script:UpstreamFiles) {
     }
 }
 
+# Variante sh: a derivação automática dos skills deve reproduzir exatamente os comandos
+# que o upstream usa na variante bash (guardados em upstream-sh/).
+$upShDir = Join-Path $script:PackRoot 'upstream-sh'
+foreach ($rel in ($script:UpstreamFiles | Where-Object { $_ -like '*.claude/skills/*' })) {
+    $pt = Join-Path $ptDir $rel
+    $upSh = Join-Path $upShDir $rel
+    if (-not (Test-Path $pt)) { continue }
+    if (-not (Test-Path $upSh)) { $failures += "$rel | referência sh ausente em upstream-sh/ (rode sync-upstream.ps1)"; continue }
+    $derived = Convert-SkillToShVariant (Read-Utf8 $pt)
+    if ($derived -match '\.specify/scripts/powershell/') { $failures += "$rel | variante sh derivada ainda referencia scripts powershell" }
+    $expected = Set-Of (Read-Utf8 $upSh) '`\.specify/scripts/bash/[^`]+`'
+    $actual = Set-Of $derived '`\.specify/scripts/bash/[^`]+`'
+    Assert-SetEqual 'comandos sh derivados' $expected $actual $rel
+}
+
 # Consistência interna: constituição inicial deve ser igual ao template de constituição
 $ctpl = Read-Utf8 (Join-Path $ptDir '.specify/templates/constitution-template.md')
 $cmem = Read-Utf8 (Join-Path $ptDir '.specify/memory/constitution.md')

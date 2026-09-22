@@ -32,6 +32,31 @@ $script:PackOwnedFiles = @(
     'CLAUDE.md'
 )
 
+# Variantes de script do Spec Kit suportadas. A tradução canônica em ptbr/ é a variante 'ps';
+# a variante 'sh' é derivada na hora de aplicar, trocando só a linha de invocação de script.
+$script:SupportedScriptVariants = @('ps', 'sh')
+
+# Converte um skill traduzido (variante ps) para a variante sh.
+# Só toca nos trechos entre crases que começam com .specify/scripts/powershell/:
+#   `.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks`
+#   -> `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks`
+function Convert-SkillToShVariant {
+    param([string]$Text)
+    $pattern = '`\.specify/scripts/powershell/([a-z-]+)\.ps1([^`]*)`'
+    $evaluator = {
+        param($m)
+        $name = $m.Groups[1].Value
+        $flags = $m.Groups[2].Value
+        $flags = [regex]::Replace($flags, '(?<=\s)-([A-Z][A-Za-z0-9]*)', {
+            param($f)
+            $parts = @([regex]::Matches($f.Groups[1].Value, '[A-Z][a-z0-9]*') | ForEach-Object { $_.Value.ToLowerInvariant() })
+            return '--' + ($parts -join '-')
+        })
+        return '`.specify/scripts/bash/' + $name + '.sh' + $flags + '`'
+    }
+    return [regex]::Replace($Text, $pattern, $evaluator)
+}
+
 function Get-PackVersion {
     $result = @{}
     $versionFile = Join-Path $script:PackRoot 'VERSION'

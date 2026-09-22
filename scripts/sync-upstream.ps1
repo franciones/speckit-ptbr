@@ -67,8 +67,18 @@ if ($init.ExitCode -ne 0 -or -not (Test-Path (Join-Path $tmp '.specify/templates
     exit 1
 }
 
+# 2b. Projeto de referência na variante sh (só os skills diferem; usados pelo validate.ps1)
+$tmpSh = "$tmp-sh"
+if (Test-Path $tmpSh) { Remove-Item -Recurse -Force $tmpSh }
+$initSh = Invoke-Native -Exe 'specify' -Arguments @('init', $tmpSh, '--integration', $current.integration, '--script', 'sh', '--non-interactive', '--ignore-agent-tools')
+if ($initSh.ExitCode -ne 0 -or -not (Test-Path (Join-Path $tmpSh '.claude/skills/speckit-specify/SKILL.md'))) {
+    Write-Fail "specify init (variante sh) falhou (código $($initSh.ExitCode))"
+    exit 1
+}
+
 # 3. Comparação
 $upstreamDir = Join-Path $script:PackRoot 'upstream'
+$upstreamShDir = Join-Path $script:PackRoot 'upstream-sh'
 $changed = @()
 $missingInNew = @()
 foreach ($rel in $script:UpstreamFiles) {
@@ -99,8 +109,21 @@ if ($newSkills.Count -gt 0) {
     $newSkills | ForEach-Object { Write-Host "      - $_" }
 }
 
+function Update-UpstreamShSkills {
+    foreach ($rel in ($script:UpstreamFiles | Where-Object { $_ -like '*.claude/skills/*' })) {
+        $src = Join-Path $tmpSh $rel
+        if (Test-Path $src) { Copy-WithDirs -Source $src -Destination (Join-Path $upstreamShDir $rel) }
+    }
+}
+function Remove-TempDirs {
+    if ($KeepTemp) { return }
+    if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
+    if (Test-Path $tmpSh) { Remove-Item -Recurse -Force $tmpSh }
+}
+
 if ($changed.Count -eq 0) {
     Write-Ok "Nenhum dos $($script:UpstreamFiles.Count) arquivos acompanhados mudou. Pacote está alinhado com $newVersion."
+    if (-not $CheckOnly) { Update-UpstreamShSkills }
     # Só registra versão nova quando o número de versão muda. Commits do upstream que não tocam
     # nos arquivos acompanhados não alteram VERSION, para não gerar pull request de ruído.
     if (-not $CheckOnly -and $newVersion -ne $current.upstream_version) {
@@ -111,7 +134,7 @@ if ($changed.Count -eq 0) {
         Set-PackVersion $current
         Write-Ok "VERSION atualizado para $newVersion ($shortCommit) sem retradução necessária"
     }
-    if (-not $KeepTemp) { Remove-Item -Recurse -Force $tmp }
+    Remove-TempDirs
     exit 0
 }
 
@@ -119,7 +142,7 @@ Write-Step "$($changed.Count) arquivo(s) mudaram no upstream:"
 $changed | ForEach-Object { Write-Host "      - $_" }
 
 if ($CheckOnly) {
-    if (-not $KeepTemp) { Remove-Item -Recurse -Force $tmp }
+    Remove-TempDirs
     exit 2
 }
 
@@ -161,10 +184,11 @@ $changes += ''
 $changes += 'Próximo passo: `scripts/translate-pending.ps1` (ou traduza manualmente usando os diffs acima) e depois `scripts/validate.ps1`.'
 Write-Utf8 -Path (Join-Path $syncDir 'CHANGES.md') -Content (($changes -join "`n") + "`n")
 
-# 5. Atualiza upstream/, VERSION e pending.json
+# 5. Atualiza upstream/, upstream-sh/, VERSION e pending.json
 foreach ($rel in $changed) {
     Copy-WithDirs -Source (Join-Path $tmp $rel) -Destination (Join-Path $upstreamDir $rel)
 }
+Update-UpstreamShSkills
 $current.upstream_version = $newVersion
 $current.upstream_ref = $Ref
 $current.upstream_commit = $newCommit
@@ -181,7 +205,7 @@ $pending = @{
 }
 Write-Utf8 -Path (Join-Path $script:PackRoot 'sync/pending.json') -Content ($pending | ConvertTo-Json -Depth 3)
 
-if (-not $KeepTemp) { Remove-Item -Recurse -Force $tmp }
+Remove-TempDirs
 
 Write-Host ''
 Write-Ok "upstream/ e VERSION atualizados para $newVersion ($shortCommit)"

@@ -29,6 +29,18 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 
 Alternativa sem mudar a política: `powershell -ExecutionPolicy Bypass -File <script> <argumentos>`.
 
+## Linux e macOS
+
+Os scripts de uso diário existem também em bash puro, sem PowerShell: `scripts/new-project.sh` e `scripts/apply.sh`. Eles geram o projeto com `--script sh` e convertem os skills na hora para chamar os scripts bash do Spec Kit. Templates e constituição são idênticos nas duas variantes.
+
+```bash
+git clone https://github.com/franciones/speckit-ptbr.git ~/ferramentas/speckit-ptbr
+chmod +x ~/ferramentas/speckit-ptbr/scripts/*.sh
+~/ferramentas/speckit-ptbr/scripts/new-project.sh meu-projeto
+```
+
+Requisitos no Linux: `uv`, `git`, `perl` (padrão em qualquer distribuição) e a CLI `specify`. Os scripts de manutenção (`sync-upstream`, `translate-pending`, `validate`) continuam em PowerShell e rodam no CI ou sob `pwsh`; um mantenedor em Linux pode instalar o PowerShell 7 ou deixar o CI fazer o sync.
+
 ## Uso no dia a dia (time)
 
 Clone este repositório uma vez, por exemplo em `C:\Ferramentas\speckit-ptbr`:
@@ -93,11 +105,14 @@ speckit-ptbr/
 │   ├── .specify/templates/*.md
 │   ├── .specify/memory/constitution.md
 │   └── .claude/skills/speckit-*/SKILL.md
-├── upstream/               # originais em inglês da versão acompanhada (base dos diffs)
+├── upstream/               # originais em inglês da versão acompanhada, variante ps (base dos diffs)
+├── upstream-sh/            # skills originais da variante sh (só para validar a derivação)
 ├── sync/                   # histórico de sincronizações e pendências
 ├── scripts/
-│   ├── new-project.ps1     # specify init + apply
-│   ├── apply.ps1           # aplica ptbr/ sobre um projeto
+│   ├── new-project.ps1     # specify init + apply (Windows)
+│   ├── new-project.sh      # idem, bash (Linux/macOS)
+│   ├── apply.ps1           # aplica ptbr/ sobre um projeto (Windows)
+│   ├── apply.sh            # idem, bash (Linux/macOS)
 │   ├── sync-upstream.ps1   # detecta mudanças no upstream
 │   ├── translate-pending.ps1
 │   ├── validate.ps1
@@ -116,6 +131,6 @@ As decisões de tradução tomadas nos skills estão registradas em `DECISOES.md
 
 ## Limitações conhecidas
 
-- Suporta só a integração Claude Code com scripts PowerShell. Para outros agentes ou scripts `sh`, os skills referenciam caminhos diferentes e precisariam de uma variante do pacote.
+- Suporta só a integração Claude Code. As duas variantes de script do Spec Kit (`ps` e `sh`) são atendidas: a tradução canônica é `ps` e a `sh` é derivada ao aplicar, validada contra os skills bash do upstream guardados em `upstream-sh/`. Outros agentes (Copilot, Cursor, Gemini) têm arquivos de comando em outros caminhos e precisariam de uma variante do pacote.
 - Depois de aplicar a tradução, um `specify init --here` em versão nova vai parar ao detectar arquivos editados. Isso é esperado. Atualize pelo pacote: `sync-upstream.ps1` e depois `apply.ps1 -Force`.
 - O GitHub fechou como "não planejado" os pedidos de suporte a idioma (issues 116 e 1239). Se um dia o upstream ganhar essa opção, este pacote deixa de ser necessário.
