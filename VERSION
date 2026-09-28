@@ -1,6 +1,6 @@
-upstream_version=1.0.10.dev0
+upstream_version=1.0.13.dev0
 upstream_ref=main
-upstream_commit=b9e7389d1414cfefe3964917a7ca48cd99503815
+upstream_commit=7b50c45a7a3ed53c3cc0476f1318645f7fa17a06
 integration=claude
 script=ps
-synced_at=2026-09-22
+synced_at=2026-09-28
