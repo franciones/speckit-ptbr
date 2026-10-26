@@ -1,0 +1,10 @@
+{
+  "sync_id": "1.2.4.dev0-fdad05f",
+  "upstream_version": "1.2.4.dev0",
+  "upstream_commit": "fdad05f44aa3b43cd7072c9b10d17d128258194c",
+  "files": [
+    ".claude/skills/speckit-taskstoissues/SKILL.md"
+  ],
+  "new_skills": [],
+  "created_at": "2026-10-26T15:39:25+00:00"
+}
