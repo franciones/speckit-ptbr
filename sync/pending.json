@@ -1,0 +1,10 @@
+{
+  "new_skills": [],
+  "created_at": "2026-11-16T19:04:47+00:00",
+  "sync_id": "1.4.2.dev0-d38bf46",
+  "files": [
+    ".claude/skills/speckit-specify/SKILL.md"
+  ],
+  "upstream_commit": "d38bf46b7887aa7c385fdd92701ea2c0cb29b5a1",
+  "upstream_version": "1.4.2.dev0"
+}
