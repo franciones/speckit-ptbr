@@ -1,0 +1,18 @@
+{
+  "sync_id": "1.4.5.dev0-c120506",
+  "files": [
+    ".claude/skills/speckit-analyze/SKILL.md",
+    ".claude/skills/speckit-checklist/SKILL.md",
+    ".claude/skills/speckit-clarify/SKILL.md",
+    ".claude/skills/speckit-constitution/SKILL.md",
+    ".claude/skills/speckit-converge/SKILL.md",
+    ".claude/skills/speckit-implement/SKILL.md",
+    ".claude/skills/speckit-plan/SKILL.md",
+    ".claude/skills/speckit-specify/SKILL.md",
+    ".claude/skills/speckit-tasks/SKILL.md"
+  ],
+  "upstream_version": "1.4.5.dev0",
+  "created_at": "2026-11-23T20:43:45+00:00",
+  "upstream_commit": "c1205067bd320e6e47fd260eaffbec3c5a62004d",
+  "new_skills": []
+}

@@ -1,0 +1,12 @@
+diff --git a/old/.claude/skills/speckit-converge/SKILL.md b/new/.claude/skills/speckit-converge/SKILL.md
+index 07bee86..a4aeee8 100644
+--- a/old/.claude/skills/speckit-converge/SKILL.md
++++ b/new/.claude/skills/speckit-converge/SKILL.md
+@@ -5,6 +5,7 @@ compatibility: "Requires spec-kit project structure with .specify/ directory"
+ metadata:
+   author: "github-spec-kit"
+   source: "templates/commands/converge.md"
++  version: "1.4.5.dev0"
+ user-invocable: true
+ disable-model-invocation: false
+ ---
