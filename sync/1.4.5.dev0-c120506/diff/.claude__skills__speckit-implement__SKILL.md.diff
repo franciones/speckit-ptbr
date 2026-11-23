@@ -1,0 +1,12 @@
+diff --git a/old/.claude/skills/speckit-implement/SKILL.md b/new/.claude/skills/speckit-implement/SKILL.md
+index b720f4b..9ae03db 100644
+--- a/old/.claude/skills/speckit-implement/SKILL.md
++++ b/new/.claude/skills/speckit-implement/SKILL.md
+@@ -6,6 +6,7 @@ compatibility: "Requires spec-kit project structure with .specify/ directory"
+ metadata:
+   author: "github-spec-kit"
+   source: "templates/commands/implement.md"
++  version: "1.4.5.dev0"
+ user-invocable: true
+ disable-model-invocation: false
+ ---

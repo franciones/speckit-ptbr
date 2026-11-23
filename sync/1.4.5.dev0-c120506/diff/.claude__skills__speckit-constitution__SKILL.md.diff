@@ -1,0 +1,12 @@
+diff --git a/old/.claude/skills/speckit-constitution/SKILL.md b/new/.claude/skills/speckit-constitution/SKILL.md
+index 505c092..4b79322 100644
+--- a/old/.claude/skills/speckit-constitution/SKILL.md
++++ b/new/.claude/skills/speckit-constitution/SKILL.md
+@@ -6,6 +6,7 @@ compatibility: "Requires spec-kit project structure with .specify/ directory"
+ metadata:
+   author: "github-spec-kit"
+   source: "templates/commands/constitution.md"
++  version: "1.4.5.dev0"
+ user-invocable: true
+ disable-model-invocation: false
+ ---

@@ -1,0 +1,12 @@
+diff --git a/old/.claude/skills/speckit-clarify/SKILL.md b/new/.claude/skills/speckit-clarify/SKILL.md
+index 130f8c7..1d54182 100644
+--- a/old/.claude/skills/speckit-clarify/SKILL.md
++++ b/new/.claude/skills/speckit-clarify/SKILL.md
+@@ -6,6 +6,7 @@ compatibility: "Requires spec-kit project structure with .specify/ directory"
+ metadata:
+   author: "github-spec-kit"
+   source: "templates/commands/clarify.md"
++  version: "1.4.5.dev0"
+ user-invocable: true
+ disable-model-invocation: false
+ ---
